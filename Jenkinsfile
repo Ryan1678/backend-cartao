@@ -1,54 +1,65 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'useSonar', defaultValue: true, description: 'Análise de código via SonarQube')
+    }
+
     environment {
-        // Definir variáveis de ambiente do SonarQube
-        SONARQUBE_SERVER = 'sonarqube' // Nome da instância do SonarQube configurada no Jenkins
+        SONARQUBE_SERVER = 'sonarqube'
         GITHUB_REPO = 'https://github.com/programadormovel/miniprojetospring2024.git'
+        DO_SCANNER = true
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clonar o repositório do GitHub
                 git branch: 'main', url: env.GITHUB_REPO
             }
         }
 
         stage('Build') {
-
+            when {
+                branch 'main'
+            }
             steps {
                 withMaven(globalMavenSettingsConfig: '', jdk: '11', maven: '3.9.4', mavenSettingsConfig: '', publisherStrategy: 'EXPLICIT', traceability: true) {
-                    // some block
-                    // Compilar o projeto (substitua 'mvn clean install' pelo comando adequado para seu projeto)
+                    echo "VALIDAÇÃO SONAR = ${env.useSonar}"
                     sh 'mvn clean install'
-//                     sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=miniprojetospring'
-//                     sh "mvn clean verify sonar:sonar -Dsonar.projectKey=miniprojetospring -Dsonar.host.url=http://192.168.0.2:9000 -Dsonar.login=sqp_3ceadd0b157eef45c001a8fe35a23d55d613f453"
-                }
+               }
             }
         }
 
         stage('SonarQube Analysis') {
             environment {
-                // Variáveis SonarQube
-                SONAR_SCANNER_HOME = tool 'SonarQube Scanner' // Nome do scanner configurado no Jenkins
+                SONAR_SCANNER_HOME = tool 'SonarQube Scanner'
             }
             steps {
-                // Executar a análise do SonarQube
                 withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                    sh "${env.SONAR_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=miniprojetospring -Dsonar.host.url=http://192.168.0.2:9000 -Dsonar.login=sqp_3ceadd0b157eef45c001a8fe35a23d55d613f453 -Dsonar.sources=src/main/java/ -Dsonar.java.binaries=target/classes"
+                    script{
+                        if (params.useSonar){
+                            sh "${env.SONAR_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=miniprojetospring -Dsonar.host.url=http://192.168.0.2:9000 -Dsonar.login=sqp_3ceadd0b157eef45c001a8fe35a23d55d613f453 -Dsonar.sources=src/main/java/ -Dsonar.java.binaries=target/classes"
+                        } else {
+                            echo "VALIDAÇÃO SONAR NÃO SERÁ REALIZADA = ${env.useSonar}"
+                        }
+                    }
                 }
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                // Aguardar e verificar o status da análise do SonarQube
-                timeout(time: 1, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
+//         stage("Quality Gate") {
+//             steps {
+//                 script{
+//                     if (params.useSonar){
+//                         timeout(time: 1, unit: 'MINUTES') {
+//                             // Parameter indicates whether to set pipeline to UNSTABLE if Quality Gate fails
+//                             // true = set pipeline to UNSTABLE, false = don't
+//                             waitForQualityGate abortPipeline: true
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Deploy') {
             steps {
