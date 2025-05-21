@@ -1,52 +1,57 @@
 package br.com.itb.miniprojetospring.control;
 
-import java.util.List;
+import br.com.itb.miniprojetospring.model.ProdutoDTO;
+import br.com.itb.miniprojetospring.service.ProdutoService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import br.com.itb.miniprojetospring.model.Produto;
-import br.com.itb.miniprojetospring.service.ProdutoService;
+import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "", maxAge = 3600, allowCredentials = "false")
+@CrossOrigin(origins = "http://localhost:5173") // Ajuste a origem para seu front
 @RequestMapping("/produto")
 public class ProdutoController {
 
-    final ProdutoService produtoService;
+    private final ProdutoService produtoService;
 
-    public ProdutoController(ProdutoService _produtoService) {
-        this.produtoService = _produtoService;
+    public ProdutoController(ProdutoService produtoService) {
+        this.produtoService = produtoService;
     }
 
-    // ROTA POST - Criar novo funcionário
     @PostMapping
-    public ResponseEntity<Object> saveProduto(@RequestBody Produto produto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(produtoService.save(produto));
+    public ResponseEntity<ProdutoDTO> saveProduto(@RequestBody ProdutoDTO produtoDTO) {
+        ProdutoDTO salvo = produtoService.save(produtoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
-    // ROTA GET - Listar todos os funcionários
     @GetMapping
-    public ResponseEntity<List<Produto>> getAllProdutos() {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(produtoService.findAll());
+    public ResponseEntity<List<ProdutoDTO>> getAllProdutos() {
+        return ResponseEntity.ok(produtoService.findAll());
     }
 
-    // ROTA PUT - Atualizar funcionário existente
+    @GetMapping("/{id}")
+    public ResponseEntity<ProdutoDTO> getProdutoById(@PathVariable Long id) {
+        ProdutoDTO dto = produtoService.findById(id);
+        if (dto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(dto);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateProduto(@PathVariable Long id, @RequestBody Produto produto) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(produtoService.update(id, produto));
+    public ResponseEntity<ProdutoDTO> updateProduto(@PathVariable Long id, @RequestBody ProdutoDTO produtoDTO) {
+        ProdutoDTO atualizado = produtoService.update(id, produtoDTO);
+        if (atualizado == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(atualizado);
     }
 
-    // ROTA DELETE - Excluir funcionário por ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteProduto(@PathVariable long id) {
+    public ResponseEntity<Void> deleteProduto(@PathVariable Long id) {
         produtoService.delete(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.noContent().build();
     }
 }
-
-
