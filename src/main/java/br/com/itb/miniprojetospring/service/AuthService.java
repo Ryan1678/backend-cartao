@@ -11,9 +11,11 @@ public class AuthService {
     @Autowired
     private FuncionarioRepository funcionarioRepository;
 
-    public boolean authenticate(String email, String senha) {
+    public Funcionario authenticate(String email, String senha) {
         return funcionarioRepository.findByEmail(email)
-                .map(funcionario -> funcionario.getSenha().equals(senha)) // Verifica se a senha coincide
-                .orElse(false); // Se o email não for encontrado, retorna false
+                .filter(funcionario -> funcionario.getSenha().equals(senha)) // mantém só se senha bate
+                .orElse(null); // retorna null se não encontrado ou senha errada
     }
+
 }
+
