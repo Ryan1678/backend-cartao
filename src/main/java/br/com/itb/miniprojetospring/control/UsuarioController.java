@@ -1,5 +1,6 @@
 package br.com.itb.miniprojetospring.control;
 
+import br.com.itb.miniprojetospring.model.UsuarioDTO;
 import br.com.itb.miniprojetospring.model.Usuario;
 import br.com.itb.miniprojetospring.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -16,52 +16,39 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
-    // GET /usuarios
     @GetMapping
-    public List<Usuario> listarTodos() {
-        return usuarioService.listarTodos();
+    public List<Usuario> listarUsuarios() {
+        return usuarioService.buscarTodos();
     }
 
-    // GET /usuarios/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<Usuario> buscarPorId(@PathVariable int id) {
-        Optional<Usuario> usuario = usuarioService.buscarPorId(id);
-        return usuario.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // POST /usuarios
     @PostMapping
-    public Usuario criar(@RequestBody Usuario usuario) {
-        return usuarioService.salvar(usuario);
+    public ResponseEntity<?> criarUsuario(@RequestBody UsuarioDTO dto) {
+        try {
+            Usuario usuario = usuarioService.salvarUsuario(dto);
+            return ResponseEntity.ok(usuario);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro ao salvar usuário: " + e.getMessage());
+        }
     }
 
-    // PUT /usuarios/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> atualizar(@PathVariable int id, @RequestBody Usuario usuario) {
-        Optional<Usuario> existente = usuarioService.buscarPorId(id);
-        if (existente.isPresent()) {
-            usuario.setId(id); // garante que o ID seja mantido
-            return ResponseEntity.ok(usuarioService.salvar(usuario));
-        } else {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> atualizarUsuario(@PathVariable int id, @RequestBody UsuarioDTO dto) {
+        try {
+            dto.setId(id);  // garante que o id do caminho é o usado
+            Usuario usuario = usuarioService.atualizarUsuario(dto);
+            return ResponseEntity.ok(usuario);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro ao atualizar usuário: " + e.getMessage());
         }
     }
 
-    // DELETE /usuarios/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable int id) {
-        Optional<Usuario> existente = usuarioService.buscarPorId(id);
-        if (existente.isPresent()) {
-            usuarioService.deletar(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> deletarUsuario(@PathVariable int id) {
+        try {
+            usuarioService.deletarUsuario(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro ao deletar usuário: " + e.getMessage());
         }
     }
-    @GetMapping("/admin-vendedor")
-    public List<Usuario> listarAdminsEVendedores() {
-        return usuarioService.listarAdministradoresEVendedores();
-    }
-
 }

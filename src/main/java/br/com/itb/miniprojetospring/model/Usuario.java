@@ -2,6 +2,9 @@ package br.com.itb.miniprojetospring.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "Usuario")
@@ -17,6 +20,7 @@ public class Usuario {
     private String nivelAcesso;
 
     @Lob
+    @JsonIgnore // Não envia o byte[] direto no JSON
     private byte[] foto;
 
     private LocalDateTime dataCadastro;
@@ -93,5 +97,24 @@ public class Usuario {
     }
     public void setStatusUsuario(String statusUsuario) {
         this.statusUsuario = statusUsuario;
+    }
+
+    // Envia a foto no JSON como base64
+    @JsonProperty("foto")
+    public String getFotoBase64() {
+        if (this.foto != null && this.foto.length > 0) {
+            return Base64.getEncoder().encodeToString(this.foto);
+        }
+        return null;
+    }
+
+    // Recebe foto base64 e converte para byte[]
+    @JsonProperty("foto")
+    public void setFotoBase64(String fotoBase64) {
+        if (fotoBase64 != null && !fotoBase64.isEmpty()) {
+            this.foto = Base64.getDecoder().decode(fotoBase64);
+        } else {
+            this.foto = null;
+        }
     }
 }

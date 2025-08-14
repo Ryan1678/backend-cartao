@@ -1,11 +1,13 @@
 package br.com.itb.miniprojetospring.control;
 
 import br.com.itb.miniprojetospring.model.Cartao;
+import br.com.itb.miniprojetospring.model.CartaoRepository;
 import br.com.itb.miniprojetospring.service.CartaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +18,11 @@ public class CartaoController {
     @Autowired
     private CartaoService cartaoService;
 
+    private final CartaoRepository repository;
+
+    public CartaoController(CartaoRepository repository) {
+        this.repository = repository;
+    }
     // GET /cartoes
     @GetMapping
     public List<Cartao> listarTodos() {
@@ -48,6 +55,23 @@ public class CartaoController {
         }
     }
 
+    @PutMapping("/{id}/entrada")
+    public Cartao adicionarSaldo(@PathVariable int id, @RequestParam BigDecimal valor) {
+        Cartao cartao = repository.findById(id).orElseThrow();
+        cartao.setSaldo(cartao.getSaldo().add(valor));
+        return repository.save(cartao);
+    }
+
+    @PutMapping("/{id}/saida")
+    public Cartao retirarSaldo(@PathVariable int id, @RequestParam BigDecimal valor) {
+        Cartao cartao = repository.findById(id).orElseThrow();
+        if (cartao.getSaldo().compareTo(valor) < 0) {
+            throw new RuntimeException("Saldo insuficiente");
+        }
+        cartao.setSaldo(cartao.getSaldo().subtract(valor));
+        return repository.save(cartao);
+    }
+
     // DELETE /cartoes/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable int id) {
@@ -58,5 +82,7 @@ public class CartaoController {
         } else {
             return ResponseEntity.notFound().build();
         }
+
     }
+
 }
