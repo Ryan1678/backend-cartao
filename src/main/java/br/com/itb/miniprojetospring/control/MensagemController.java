@@ -9,20 +9,21 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+@CrossOrigin(origins = "http://localhost:3000") // Libera o front-end React
 @RestController
-@RequestMapping("/mensagens")
+@RequestMapping("/mensagens") // Corrigido para combinar com a URL do React
 public class MensagemController {
 
     @Autowired
     private MensagemService mensagemService;
 
-    // GET /mensagens
+    // GET /api/mensagens
     @GetMapping
     public List<Mensagem> listarTodos() {
         return mensagemService.listarTodos();
     }
 
-    // GET /mensagens/{id}
+    // GET /api/mensagens/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Mensagem> buscarPorId(@PathVariable int id) {
         Optional<Mensagem> mensagem = mensagemService.buscarPorId(id);
@@ -30,13 +31,13 @@ public class MensagemController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /mensagens
+    // POST /api/mensagens
     @PostMapping
     public Mensagem criar(@RequestBody Mensagem mensagem) {
         return mensagemService.salvar(mensagem);
     }
 
-    // PUT /mensagens/{id}
+    // PUT /api/mensagens/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Mensagem> atualizar(@PathVariable int id, @RequestBody Mensagem mensagem) {
         Optional<Mensagem> existente = mensagemService.buscarPorId(id);
@@ -48,7 +49,7 @@ public class MensagemController {
         }
     }
 
-    // DELETE /mensagens/{id}
+    // DELETE /api/mensagens/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable int id) {
         Optional<Mensagem> existente = mensagemService.buscarPorId(id);

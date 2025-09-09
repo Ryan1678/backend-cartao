@@ -5,6 +5,7 @@ import br.com.itb.miniprojetospring.model.MensagemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,17 @@ public class MensagemService {
 
     // Criar ou atualizar mensagem
     public Mensagem salvar(Mensagem mensagem) {
+
+        // Se for nova mensagem, define a data
+        if (mensagem.getId() == 0) {
+            mensagem.setDataMensagem(LocalDateTime.now());
+        }
+
+        // Define status padrão se não vier no request
+        if (mensagem.getStatusMensagem() == null || mensagem.getStatusMensagem().isEmpty()) {
+            mensagem.setStatusMensagem("ATIVO");
+        }
+
         return mensagemRepository.save(mensagem);
     }
 

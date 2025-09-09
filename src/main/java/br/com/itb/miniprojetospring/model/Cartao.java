@@ -12,14 +12,23 @@ public class Cartao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @Column(nullable = false, length = 100)
     private String nome;
+
+    @Column(nullable = false, length = 100)
     private String numero;
+
+    @Column(nullable = false)
     private LocalDateTime dataCadastro;
 
-    @Column(precision = 8, scale = 2)
+    @Column(precision = 8, scale = 2, nullable = false)
     private BigDecimal saldo;
 
-    private String statusCartao;
+    @Column(nullable = false, length = 100)
+    private String codigoResgate;
+
+    @Column(nullable = false, length = 10)
+    private String statusCartao; // ATIVO ou INATIVO
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
@@ -29,13 +38,14 @@ public class Cartao {
     public Cartao() {
     }
 
-    // Construtor com parâmetros
-    public Cartao(int id, String nome, String numero, LocalDateTime dataCadastro, BigDecimal saldo, String statusCartao, Usuario usuario) {
+    // Construtor com parâmetros (incluindo codigoResgate)
+    public Cartao(int id, String nome, String numero, LocalDateTime dataCadastro, BigDecimal saldo, String codigoResgate, String statusCartao, Usuario usuario) {
         this.id = id;
         this.nome = nome;
         this.numero = numero;
         this.dataCadastro = dataCadastro;
         this.saldo = saldo;
+        this.codigoResgate = codigoResgate;
         this.statusCartao = statusCartao;
         this.usuario = usuario;
     }
@@ -74,6 +84,13 @@ public class Cartao {
     }
     public void setSaldo(BigDecimal saldo) {
         this.saldo = saldo;
+    }
+
+    public String getCodigoResgate() {
+        return codigoResgate;
+    }
+    public void setCodigoResgate(String codigoResgate) {
+        this.codigoResgate = codigoResgate;
     }
 
     public String getStatusCartao() {

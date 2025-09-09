@@ -14,7 +14,7 @@ public class Mensagem {
     private LocalDateTime dataMensagem;
 
     @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @JoinColumn(name = "usuario_id", nullable = true) // Agora o usuário é opcional
     private Usuario usuario;
 
     private String telefone;

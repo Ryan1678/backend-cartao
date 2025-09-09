@@ -12,7 +12,6 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    private String nome;
     private LocalDate dataNascimento;
     private String tipoCliente;     // pode ser "PADRAO", "ALUNO", etc.
     private String documento;
@@ -28,12 +27,11 @@ public class Cliente {
     public Cliente() {
     }
 
-    // Construtor com parâmetros
-    public Cliente(int id, String nome, LocalDate dataNascimento, String tipoCliente,
+    // Construtor com parâmetros (sem nome agora)
+    public Cliente(int id, LocalDate dataNascimento, String tipoCliente,
                    String documento, String telefone, LocalDateTime dataCadastro,
                    String statusCliente, Usuario usuario) {
         this.id = id;
-        this.nome = nome;
         this.dataNascimento = dataNascimento;
         this.tipoCliente = tipoCliente;
         this.documento = documento;
@@ -49,13 +47,6 @@ public class Cliente {
     }
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-    public void setNome(String nome) {
-        this.nome = nome;
     }
 
     public LocalDate getDataNascimento() {
