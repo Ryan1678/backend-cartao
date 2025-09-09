@@ -2,87 +2,146 @@ package br.com.itb.miniprojetospring.control;
 
 import br.com.itb.miniprojetospring.model.Cartao;
 import br.com.itb.miniprojetospring.model.CartaoRepository;
-import br.com.itb.miniprojetospring.service.CartaoService;
+import br.com.itb.miniprojetospring.model.Usuario;
+import br.com.itb.miniprojetospring.model.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/cartoes")
+@RequestMapping("/api/cartao")
 public class CartaoController {
 
     @Autowired
-    private CartaoService cartaoService;
+    private CartaoRepository cartaoRepository;
 
-    private final CartaoRepository repository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    public CartaoController(CartaoRepository repository) {
-        this.repository = repository;
-    }
-    // GET /cartoes
-    @GetMapping
-    public List<Cartao> listarTodos() {
-        return cartaoService.listarTodos();
-    }
-
-    // GET /cartoes/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<Cartao> buscarPorId(@PathVariable int id) {
-        Optional<Cartao> cartao = cartaoService.buscarPorId(id);
-        return cartao.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // POST /cartoes
+    // Criar cartão
     @PostMapping
-    public Cartao criar(@RequestBody Cartao cartao) {
-        return cartaoService.salvar(cartao);
-    }
+    public ResponseEntity<Cartao> criarCartao(@RequestBody Map<String, String> payload) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findById(Integer.parseInt(payload.get("usuarioId")));
+        if (usuarioOpt.isEmpty()) return ResponseEntity.badRequest().build();
 
-    // PUT /cartoes/{id}
-    @PutMapping("/{id}")
-    public ResponseEntity<Cartao> atualizar(@PathVariable int id, @RequestBody Cartao cartao) {
-        Optional<Cartao> existente = cartaoService.buscarPorId(id);
-        if (existente.isPresent()) {
-            cartao.setId(id);
-            return ResponseEntity.ok(cartaoService.salvar(cartao));
-        } else {
-            return ResponseEntity.notFound().build();
+        Usuario usuario = usuarioOpt.get();
+        Cartao cartao = new Cartao();
+        cartao.setNome(payload.get("nome"));
+
+        // Gera exatamente 16 dígitos
+        Random random = new Random();
+        StringBuilder numero = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            numero.append(random.nextInt(10));
         }
+        cartao.setNumero(numero.toString());
+
+        cartao.setDataCadastro(LocalDateTime.now());
+        cartao.setSaldo(BigDecimal.ZERO);
+        cartao.setCodigoResgate(""); // inicial vazio
+        cartao.setStatusCartao("ATIVO");
+        cartao.setUsuario(usuario);
+
+        Cartao salvo = cartaoRepository.save(cartao);
+        return ResponseEntity.ok(salvo);
     }
 
+    // Listar todos os cartões
+    @GetMapping
+    public ResponseEntity<List<Cartao>> listarCartoes() {
+        List<Cartao> cartoes = cartaoRepository.findAll();
+        return ResponseEntity.ok(cartoes);
+    }
+
+    // Listar cartões por usuário
+    @GetMapping("/{usuarioId}")
+    public ResponseEntity<List<Cartao>> listarCartoesPorUsuario(@PathVariable int usuarioId) {
+        List<Cartao> cartoes = cartaoRepository.findByUsuarioId(usuarioId);
+        return ResponseEntity.ok(cartoes);
+    }
+
+    // Operação de entrada (adicionar saldo)
     @PutMapping("/{id}/entrada")
-    public Cartao adicionarSaldo(@PathVariable int id, @RequestParam BigDecimal valor) {
-        Cartao cartao = repository.findById(id).orElseThrow();
+    public ResponseEntity<?> entradaSaldo(@PathVariable int id, @RequestParam BigDecimal valor) {
+        Optional<Cartao> cartaoOpt = cartaoRepository.findById(id);
+        if (cartaoOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cartao cartao = cartaoOpt.get();
         cartao.setSaldo(cartao.getSaldo().add(valor));
-        return repository.save(cartao);
+        cartaoRepository.save(cartao);
+
+        return ResponseEntity.ok(cartao);
     }
 
+    // Operação de saída (remover saldo)
     @PutMapping("/{id}/saida")
-    public Cartao retirarSaldo(@PathVariable int id, @RequestParam BigDecimal valor) {
-        Cartao cartao = repository.findById(id).orElseThrow();
+    public ResponseEntity<?> saidaSaldo(
+            @PathVariable int id,
+            @RequestParam BigDecimal valor,
+            @RequestParam String codigoResgate) {
+
+        Optional<Cartao> cartaoOpt = cartaoRepository.findById(id);
+        if (cartaoOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cartao cartao = cartaoOpt.get();
+
+        // Verifica se o código informado é igual ao código do cartão
+        if (!cartao.getCodigoResgate().equals(codigoResgate)) {
+            return ResponseEntity.badRequest().body("Código de resgate inválido!");
+        }
+
         if (cartao.getSaldo().compareTo(valor) < 0) {
-            throw new RuntimeException("Saldo insuficiente");
+            return ResponseEntity.badRequest().body("Saldo insuficiente");
         }
+
         cartao.setSaldo(cartao.getSaldo().subtract(valor));
-        return repository.save(cartao);
+        cartaoRepository.save(cartao);
+
+        return ResponseEntity.ok(cartao);
     }
 
-    // DELETE /cartoes/{id}
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable int id) {
-        Optional<Cartao> existente = cartaoService.buscarPorId(id);
-        if (existente.isPresent()) {
-            cartaoService.deletar(id);
-            return ResponseEntity.noContent().build();
+    // Endpoint para gerar código de retirada
+    @PostMapping("/retirada/{cartaoId}")
+    public ResponseEntity<Map<String, String>> gerarCodigoRetirada(@PathVariable int cartaoId) {
+        Optional<Cartao> cartaoOpt = cartaoRepository.findById(cartaoId);
+        if (cartaoOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cartao cartao = cartaoOpt.get();
+        String novoCodigo = String.format("%04d", new Random().nextInt(10000));
+        cartao.setCodigoResgate(novoCodigo);
+        cartaoRepository.save(cartao);
+
+        Map<String, String> response = Map.of("codigoResgate", novoCodigo);
+        return ResponseEntity.ok(response);
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Cartao> atualizarNomeCartao(@PathVariable int id, @RequestBody Map<String, String> payload) {
+        Optional<Cartao> cartaoOpt = cartaoRepository.findById(id);
+        if (cartaoOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cartao cartao = cartaoOpt.get();
+        String novoNome = payload.get("nome");
+        if (novoNome != null && !novoNome.isBlank()) {
+            cartao.setNome(novoNome);
+            cartaoRepository.save(cartao);
+            return ResponseEntity.ok(cartao);
         } else {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().build();
         }
-
     }
 
+    // Deletar cartão
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarCartao(@PathVariable int id) {
+        Optional<Cartao> cartaoOpt = cartaoRepository.findById(id);
+        if (cartaoOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        cartaoRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

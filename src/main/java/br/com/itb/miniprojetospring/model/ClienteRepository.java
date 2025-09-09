@@ -5,5 +5,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
+    Cliente findByUsuario(Usuario usuario);
     // Aqui você pode criar métodos de consulta personalizados se precisar futuramente
 }

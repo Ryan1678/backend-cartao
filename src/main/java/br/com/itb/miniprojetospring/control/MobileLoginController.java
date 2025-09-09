@@ -1,46 +1,52 @@
 package br.com.itb.miniprojetospring.control;
 
+import br.com.itb.miniprojetospring.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import br.com.itb.miniprojetospring.model.LoginRequest;
-import br.com.itb.miniprojetospring.model.LoginResponse;
-import br.com.itb.miniprojetospring.model.Usuario;
-import br.com.itb.miniprojetospring.model.UsuarioRepository;
+
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/mobile") // Endpoint separado do web
-@CrossOrigin(origins = "*") // Permite mobile/web simultâneo
+@RequestMapping("/api/mobile")
+@CrossOrigin(origins = "*")
 public class MobileLoginController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private ClienteRepository clienteRepository;
+
     @PostMapping("/login")
     public ResponseEntity<?> loginCliente(@RequestBody LoginRequest loginRequest) {
-        Usuario usuario = usuarioRepository.findByEmailAndSenha(
-                loginRequest.getEmail(), loginRequest.getSenha()
+
+        // Busca usuário pelo email e senha
+        Optional<Usuario> usuarioOpt = Optional.ofNullable(
+                usuarioRepository.findByEmailAndSenha(loginRequest.getEmail(), loginRequest.getSenha())
         );
 
-        if (usuario == null) {
-            // Credenciais inválidas
-            return ResponseEntity.status(401).body(new ErrorResponse("Credenciais inválidas."));
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(401)
+                    .body(new ErrorResponse("Credenciais inválidas."));
         }
 
-        // Apenas CLIENTE pode logar aqui
+        Usuario usuario = usuarioOpt.get();
+
+        // Verifica se é CLIENTE
         if (!usuario.getNivelAcesso().equalsIgnoreCase("CLIENTE")) {
-            return ResponseEntity.status(403).body(new ErrorResponse("Acesso negado. Apenas clientes podem logar aqui."));
+            return ResponseEntity.status(403)
+                    .body(new ErrorResponse("Acesso negado. Apenas clientes podem logar aqui."));
         }
 
-        // Login válido
-        return ResponseEntity.ok(new LoginResponse(
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getNivelAcesso()
-        ));
+        // Busca o cliente associado (pode ser null)
+        Cliente cliente = clienteRepository.findByUsuario(usuario);
+
+        // Retorna resposta completa
+        return ResponseEntity.ok(new MobileLoginResponse(usuario, cliente));
     }
 
-    // Classe interna para retornar erros
+    // Classe interna para retorno de erros
     class ErrorResponse {
         public String error;
 
