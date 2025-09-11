@@ -1,8 +1,6 @@
 package br.com.itb.miniprojetospring.service;
 
-import br.com.itb.miniprojetospring.model.Usuario;
-import br.com.itb.miniprojetospring.model.UsuarioDTO;
-import br.com.itb.miniprojetospring.model.UsuarioRepository;
+import br.com.itb.miniprojetospring.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -107,5 +105,11 @@ public class UsuarioService {
         dto.setStatusUsuario(usuario.getStatusUsuario());
 
         return dto;
+    }
+    @Autowired
+    private CartaoRepository cartaoRepository;
+
+    public List<Cartao> buscarCartoesPorUsuario(int usuarioId) {
+        return cartaoRepository.findByUsuarioId(usuarioId);
     }
 }

@@ -1,5 +1,6 @@
 package br.com.itb.miniprojetospring.control;
 
+import br.com.itb.miniprojetospring.model.Cartao;
 import br.com.itb.miniprojetospring.model.UsuarioDTO;
 import br.com.itb.miniprojetospring.model.Usuario;
 import br.com.itb.miniprojetospring.service.UsuarioService;
@@ -49,6 +50,16 @@ public class UsuarioController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Erro ao deletar usuário: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/cartoes")
+    public ResponseEntity<?> listarCartoesPorUsuario(@PathVariable int id) {
+        try {
+            List<Cartao> cartoes = usuarioService.buscarCartoesPorUsuario(id);
+            return ResponseEntity.ok(cartoes);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro ao buscar cartões: " + e.getMessage());
         }
     }
 }
