@@ -1,5 +1,6 @@
 package br.com.itb.miniprojetospring.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -29,6 +30,10 @@ public class Usuario {
     // Construtor padrão
     public Usuario() {
     }
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private Cliente cliente;
 
     // Construtor com parâmetros
     public Usuario(int id, String nome, String email, String senha, String nivelAcesso, byte[] foto, LocalDateTime dataCadastro, String statusUsuario) {
@@ -98,6 +103,16 @@ public class Usuario {
     public void setStatusUsuario(String statusUsuario) {
         this.statusUsuario = statusUsuario;
     }
+    // getter
+    public Cliente getCliente() {
+        return cliente;
+    }
+
+    // setter
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
+    }
+
 
     // Envia a foto no JSON como base64
     @JsonProperty("foto")

@@ -1,5 +1,6 @@
 package br.com.itb.miniprojetospring.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,8 +20,9 @@ public class Cliente {
     private LocalDateTime dataCadastro;
     private String statusCliente;   // ATIVO ou INATIVO
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    @JsonBackReference
     private Usuario usuario;
 
     // Construtor padrão
