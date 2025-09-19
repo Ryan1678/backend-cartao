@@ -6,6 +6,8 @@ import br.com.itb.miniprojetospring.model.Usuario;
 import br.com.itb.miniprojetospring.model.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -22,6 +24,9 @@ public class CartaoController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private JavaMailSender mailSender; // ✅ para envio de e-mails
 
     // Criar cartão
     @PostMapping
@@ -75,6 +80,20 @@ public class CartaoController {
         cartao.setSaldo(cartao.getSaldo().add(valor));
         cartaoRepository.save(cartao);
 
+        // ✅ Enviar e-mail ao dono do cartão
+        try {
+            String emailUsuario = cartao.getUsuario().getEmail();
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(emailUsuario);
+            message.setSubject("Recarga de Cartão");
+            message.setText("Olá, seu cartão " + cartao.getNumero()
+                    + " foi recarregado no valor de R$ " + valor
+                    + ". Saldo atual: R$ " + cartao.getSaldo());
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.out.println("Erro ao enviar e-mail: " + e.getMessage());
+        }
+
         return ResponseEntity.ok(cartao);
     }
 
@@ -102,6 +121,20 @@ public class CartaoController {
         cartao.setSaldo(cartao.getSaldo().subtract(valor));
         cartaoRepository.save(cartao);
 
+        // ✅ Enviar e-mail ao dono do cartão
+        try {
+            String emailUsuario = cartao.getUsuario().getEmail();
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(emailUsuario);
+            message.setSubject("Retirada de Saldo");
+            message.setText("Olá, foi retirada a quantia de R$ " + valor
+                    + " do seu cartão " + cartao.getNumero()
+                    + ". Saldo atual: R$ " + cartao.getSaldo());
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.out.println("Erro ao enviar e-mail: " + e.getMessage());
+        }
+
         return ResponseEntity.ok(cartao);
     }
 
@@ -119,6 +152,7 @@ public class CartaoController {
         Map<String, String> response = Map.of("codigoResgate", novoCodigo);
         return ResponseEntity.ok(response);
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<Cartao> atualizarNomeCartao(@PathVariable int id, @RequestBody Map<String, String> payload) {
         Optional<Cartao> cartaoOpt = cartaoRepository.findById(id);
